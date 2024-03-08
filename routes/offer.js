@@ -7,6 +7,7 @@ const Offer = require("../models/Offer");
 // return the document (from MDB) of the user in req.user
 const isAuthenticated = require("../middlewares/isAuthenticated");
 const cloudinaryFunc = require("../functions/cloudinaryFunc");
+const isObjectPopulate = require("../functions/isObjectPopulate");
 
 const router = express.Router();
 
@@ -45,7 +46,7 @@ router.post(
 
 			await newOffer.populate("owner", "account");
 
-			// cloudinaryFunc.folder(newOffer._id);
+			// cloudinaryFunc.folder(newOffer._id, newOffer.product_image.public_id);
 
 			return res.status(200).json(newOffer);
 		} catch (error) {
@@ -122,16 +123,7 @@ router.get("/offers/:id", async (req, res) => {
  */
 router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 	try {
-		const isBodyPopulate = (obj) => {
-			for (const prop in obj) {
-				if (Object.hasOwn(obj, prop)) {
-					return true;
-				}
-			}
-			return false;
-		};
-
-		if (isBodyPopulate(req.body) === false) {
+		if (isObjectPopulate(req.body) === false && req.files === undefined) {
 			return res.status(400).json({
 				message:
 					"Please change at least one information from your offer before validate.",
@@ -178,7 +170,13 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 					offerToModify.product_image.public_id
 				);
 				// console.log("Etape 4 : ", newFile);
-				offerToModify.product_image = newFile;
+
+				const fileModification = await cloudinaryFunc.folder(
+					offerToModify._id,
+					newFile.public_id
+				);
+
+				offerToModify.product_image = fileModification;
 			}
 
 			await offerToModify.save();
@@ -190,6 +188,9 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 	}
 });
 
+/**
+ * Delete an existing offer
+ */
 router.delete("/offer/:id", isAuthenticated, async (req, res) => {
 	try {
 		const offerID = req.params.id;

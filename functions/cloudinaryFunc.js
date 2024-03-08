@@ -1,4 +1,5 @@
 const cloudinary = require("cloudinary").v2;
+const isObjectPopulate = require("../functions/isObjectPopulate");
 
 cloudinary.config({
 	cloud_name: process.env.CLOUD_NAME,
@@ -49,8 +50,26 @@ const middlewareCreate = async (req, res, next) => {
 	}
 };
 
-const folder = async (offerID) => {
-	cloudinary.api.create_folder("vinted/offers/" + offerID).then(callback);
+const folder = async (offerID, filePublicId) => {
+	try {
+		const folderList = await cloudinary.api.sub_folders("vinted/offers");
+		let newPublicId = "";
+
+		if (folderList.folders.length <= 0) {
+			const folderCreated = await cloudinary.api.create_folder(
+				"vinted/offers/" + offerID
+			);
+			newPublicId = folderCreated.path + "/" + filePublicId;
+		} else {
+			newPublicId = folderList.folders.path + "/" + filePublicId;
+		}
+
+		const result = await cloudinary.uploader.rename(filePublicId, newPublicId);
+
+		return result;
+	} catch (error) {
+		console.error(error.message);
+	}
 };
 
 module.exports = { deleteCreate, middlewareCreate, folder };
