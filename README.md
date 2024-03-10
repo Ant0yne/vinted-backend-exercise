@@ -1,12 +1,12 @@
 # Backend Exercises - Vinted
 
-_An exercise to recreate the Vinted website. It's part of my training to become a web and mobile developer with the school "Le Reacteur"_
+An exercise to recreate the Vinted website. It's part of my training to become a web and mobile developer with the school "Le Reacteur"
 
 ## Routes
 
 ### Users
 
-**Login**
+    *Login*
 
 `https://site--vinted-backend-exercise--spyfkvx5gdbh.code.run/user/login`
 
