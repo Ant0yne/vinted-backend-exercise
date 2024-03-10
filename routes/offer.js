@@ -8,6 +8,7 @@ const Offer = require("../models/Offer");
 const isAuthenticated = require("../middlewares/isAuthenticated");
 const cloudinaryFunc = require("../functions/cloudinaryFunc");
 const isObjectPopulate = require("../functions/isObjectPopulate");
+const { default: mongoose } = require("mongoose");
 
 const router = express.Router();
 
@@ -20,24 +21,63 @@ router.post(
 	"/offer/publish",
 	isAuthenticated,
 	fileUpload(),
-	// req.fileUploaded -> the object with the file info from Cloudinary
-	cloudinaryFunc.middlewareCreate,
+	cloudinaryFunc.middlewareFileCheck,
 	async (req, res) => {
 		try {
+			let { title, description, price, condition, city, brand, size, color } =
+				req.body;
+
+			if (
+				title === undefined ||
+				typeof title !== "string" ||
+				description === undefined ||
+				typeof description !== "string" ||
+				price === undefined ||
+				isNaN(price) ||
+				typeof condition !== "string" ||
+				typeof city !== "string" ||
+				typeof brand !== "string" ||
+				typeof color !== "string" ||
+				(typeof size !== "string" && isNaN(size))
+			) {
+				return res.status(400).json({
+					message:
+						"Please fill all the mandatory fields with the right type of parameters.",
+				});
+			}
+
+			if (condition === undefined) {
+				condition = "";
+			}
+			if (city === undefined) {
+				city = "";
+			}
+			if (size === undefined) {
+				size = "";
+			}
+			if (color === undefined) {
+				color = "";
+			}
+
 			const detailsBody = [
-				{ MARQUE: req.body.brand },
-				{ TAILLE: req.body.size },
-				{ ÉTAT: req.body.condition },
-				{ COULEUR: req.body.color },
-				{ EMPLACEMENT: req.body.city },
+				{ MARQUE: brand },
+				{ TAILLE: size },
+				{ ÉTAT: condition },
+				{ COULEUR: color },
+				{ EMPLACEMENT: city },
 			];
-			// console.log("Etape 3 : ", req.fileUploaded);
+
+			const fileUploaded = await cloudinaryFunc.deleteCreateFiles(
+				req.files.picture
+			);
+
+			// console.log("Etape 3 : ", fileUploaded);
 			const newOffer = new Offer({
-				product_name: req.body.title,
-				product_description: req.body.description,
-				product_price: req.body.price,
+				product_name: title,
+				product_description: description,
+				product_price: price,
 				product_details: detailsBody,
-				product_image: req.fileUploaded,
+				product_image: fileUploaded,
 				owner: req.user,
 			});
 
@@ -111,7 +151,15 @@ router.get("/offers", async (req, res) => {
  */
 router.get("/offers/:id", async (req, res) => {
 	try {
-		const offerByID = await Offer.findById(req.params.id)
+		const offerID = req.params.id;
+
+		if (mongoose.isObjectIdOrHexString(offerID) === false) {
+			return res.status(400).json({
+				message: "Please use a valid Id.",
+			});
+		}
+
+		const offerByID = await Offer.findById(offerID)
 			.populate("owner", "account -_id")
 			.select("product_name product_description product_price owner -_id");
 
@@ -138,7 +186,15 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 			});
 		}
 
+		const { title, description, price, condition, city, brand, size, color } =
+			req.body;
 		const offerID = req.params.id;
+
+		if (mongoose.isObjectIdOrHexString(offerID) === false) {
+			return res.status(400).json({
+				message: "Please use a valid Id.",
+			});
+		}
 		const offerToModify = await Offer.findOne({ _id: offerID }).populate(
 			"owner"
 		);
@@ -148,29 +204,77 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 		} else if (offerToModify.owner.token !== req.user.token) {
 			return res.status(401).json({ error: "Unauthorized to do this action." });
 		} else {
-			if (req.body.title) {
-				offerToModify.product_name = req.body.title;
+			if (title) {
+				if (typeof title === "string") {
+					offerToModify.product_name = title;
+				} else {
+					return res.status(400).json({
+						message: "Please fill fields with the right type of parameters.",
+					});
+				}
 			}
-			if (req.body.description) {
-				offerToModify.product_description = req.body.description;
+			if (description) {
+				if (typeof description === "string") {
+					offerToModify.product_description = description;
+				} else {
+					return res.status(400).json({
+						message: "Please fill fields with the right type of parameters.",
+					});
+				}
 			}
-			if (Number(req.body.price)) {
-				offerToModify.product_price = req.body.price;
+			if (price) {
+				if (!isNaN(price)) {
+					offerToModify.product_price = price;
+				} else {
+					return res.status(400).json({
+						message: "Please fill fields with the right type of parameters.",
+					});
+				}
 			}
-			if (req.body.brand) {
-				offerToModify.product_details[0] = { MARQUE: req.body.brand };
+			if (brand) {
+				if (typeof brand === "string") {
+					offerToModify.product_details[0] = { MARQUE: brand };
+				} else {
+					return res.status(400).json({
+						message: "Please fill fields with the right type of parameters.",
+					});
+				}
 			}
-			if (req.body.size) {
-				offerToModify.product_details[1] = { TAILLE: req.body.size };
+			if (size) {
+				if (typeof size === "string" || typeof size === "number") {
+					offerToModify.product_details[1] = { TAILLE: size };
+				} else {
+					return res.status(400).json({
+						message: "Please fill fields with the right type of parameters.",
+					});
+				}
 			}
-			if (req.body.condition) {
-				offerToModify.product_details[2] = { ÉTAT: req.body.condition };
+			if (condition) {
+				if (typeof condition === "string") {
+					offerToModify.product_details[2] = { ÉTAT: condition };
+				} else {
+					return res.status(400).json({
+						message: "Please fill fields with the right type of parameters.",
+					});
+				}
 			}
-			if (req.body.color) {
-				offerToModify.product_details[3] = { COULEUR: req.body.color };
+			if (color) {
+				if (typeof color === "string") {
+					offerToModify.product_details[3] = { COULEUR: color };
+				} else {
+					return res.status(400).json({
+						message: "Please fill fields with the right type of parameters.",
+					});
+				}
 			}
-			if (req.body.city) {
-				offerToModify.product_details[4] = { EMPLACEMENT: req.body.city };
+			if (city) {
+				if (typeof city === "string") {
+					offerToModify.product_details[4] = { EMPLACEMENT: city };
+				} else {
+					return res.status(400).json({
+						message: "Please fill fields with the right type of parameters.",
+					});
+				}
 			}
 			if (req.files) {
 				const newFile = await cloudinaryFunc.deleteCreateFiles(
@@ -201,6 +305,13 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 router.delete("/offer/:id", isAuthenticated, async (req, res) => {
 	try {
 		const offerID = req.params.id;
+
+		if (mongoose.isObjectIdOrHexString(offerID) === false) {
+			return res.status(400).json({
+				message: "Please use a valid Id.",
+			});
+		}
+
 		const offerToDelete = await Offer.findOne({ _id: offerID }).populate(
 			"owner"
 		);

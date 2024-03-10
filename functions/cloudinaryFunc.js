@@ -34,11 +34,11 @@ const deleteCreateFiles = async (fileToUpload, fileToDeleteID) => {
 	}
 };
 
-const middlewareCreate = async (req, res, next) => {
+const middlewareFileCheck = async (req, res, next) => {
 	try {
 		if (req.files) {
 			// console.log("Etape 1 : ", req.files.picture);
-			req.fileUploaded = await deleteCreateFiles(req.files.picture, null);
+			// req.fileUploaded = await deleteCreateFiles(req.files.picture, null);
 			return next();
 		} else {
 			return res
@@ -83,7 +83,7 @@ const deleteFolder = async (folderPath) => {
 
 module.exports = {
 	deleteCreateFiles,
-	middlewareCreate,
+	middlewareFileCheck,
 	createFolder,
 	deleteFolder,
 };
