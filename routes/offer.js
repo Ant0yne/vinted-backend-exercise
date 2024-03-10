@@ -31,7 +31,7 @@ router.post(
 				{ COULEUR: req.body.color },
 				{ EMPLACEMENT: req.body.city },
 			];
-			// console.log("Etape 5 : ", req.fileUploaded);
+			// console.log("Etape 3 : ", req.fileUploaded);
 			const newOffer = new Offer({
 				product_name: req.body.title,
 				product_description: req.body.description,
@@ -39,14 +39,22 @@ router.post(
 				product_details: detailsBody,
 				product_image: req.fileUploaded,
 				owner: req.user,
-				// owner: req.user,
 			});
+
+			// console.log("Etape 4 : ", newOffer.product_image.public_id);
+
+			const filMoveToFolder = await cloudinaryFunc.folder(
+				newOffer._id,
+				newOffer.product_image.public_id
+			);
+
+			// console.log("Etape 5 : ", filMoveToFolder);
+
+			newOffer.product_image = filMoveToFolder;
 
 			await newOffer.save();
 
 			await newOffer.populate("owner", "account");
-
-			// cloudinaryFunc.folder(newOffer._id, newOffer.product_image.public_id);
 
 			return res.status(200).json(newOffer);
 		} catch (error) {
@@ -169,7 +177,6 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 					req.files.picture,
 					offerToModify.product_image.public_id
 				);
-				// console.log("Etape 4 : ", newFile);
 
 				const fileModification = await cloudinaryFunc.folder(
 					offerToModify._id,

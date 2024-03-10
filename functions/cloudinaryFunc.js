@@ -1,5 +1,4 @@
 const cloudinary = require("cloudinary").v2;
-const isObjectPopulate = require("../functions/isObjectPopulate");
 
 cloudinary.config({
 	cloud_name: process.env.CLOUD_NAME,
@@ -22,11 +21,11 @@ const deleteCreate = async (fileToUpload, fileToDelete) => {
 		if (fileToDelete) {
 			await cloudinary.uploader.destroy(fileToDelete);
 		}
-		// console.log("Etape 2 : ", fileToUpload);
 		const result = await cloudinary.uploader.upload(
 			convertToBase64(fileToUpload)
 		);
-		// console.log("Etape 3 : ", result);
+
+		// console.log("Etape 2 : ", result);
 		return result;
 	} catch (error) {
 		return res.status(500).json({ message: "Error during the file upload." });
@@ -36,9 +35,8 @@ const deleteCreate = async (fileToUpload, fileToDelete) => {
 const middlewareCreate = async (req, res, next) => {
 	try {
 		if (req.files) {
-			// console.log("étape 1 : ", req.files.picture);
+			// console.log("Etape 1 : ", req.files.picture);
 			req.fileUploaded = await deleteCreate(req.files.picture, null);
-			// console.log("Etape 4", req.fileUploaded);
 			return next();
 		} else {
 			return res
@@ -53,18 +51,23 @@ const middlewareCreate = async (req, res, next) => {
 const folder = async (offerID, filePublicId) => {
 	try {
 		const folderList = await cloudinary.api.sub_folders("vinted/offers");
-		let newPublicId = "";
+		const newFilePublicId = `vinted/offers/${offerID}/${filePublicId}`;
+		let folderExist = false;
 
-		if (folderList.folders.length <= 0) {
-			const folderCreated = await cloudinary.api.create_folder(
-				"vinted/offers/" + offerID
-			);
-			newPublicId = folderCreated.path + "/" + filePublicId;
-		} else {
-			newPublicId = folderList.folders.path + "/" + filePublicId;
+		for (const folder of folderList.folders) {
+			if (folder.name === offerID) {
+				folderExist = true;
+			}
 		}
 
-		const result = await cloudinary.uploader.rename(filePublicId, newPublicId);
+		if (!folderExist) {
+			await cloudinary.api.create_folder("vinted/offers/" + offerID);
+		}
+
+		const result = await cloudinary.uploader.rename(
+			filePublicId,
+			newFilePublicId
+		);
 
 		return result;
 	} catch (error) {
