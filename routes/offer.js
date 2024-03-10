@@ -78,7 +78,7 @@ router.post(
 			];
 
 			const fileUploaded = await cloudinaryFunc.deleteCreateFiles(
-				req.files.picture,
+				req.files.image,
 				null
 			);
 
@@ -100,9 +100,28 @@ router.post(
 				offerFolderRootPath
 			);
 
-			// console.log("Etape 5 : ", filMoveToFolder);
-
 			newOffer.product_image = filMoveToFolder;
+
+			if (req.files.pictures) {
+				const arrayPictures = req.files.pictures;
+				const picturesFilesPromises = arrayPictures.map((picture) => {
+					return cloudinaryFunc.deleteCreateFiles(picture, null);
+				});
+				const picturesToFile = await Promise.all(picturesFilesPromises);
+
+				const picturesFolderPromises = picturesToFile.map((picture) => {
+					return cloudinaryFunc.createFolder(
+						newOffer._id,
+						picture.public_id,
+						offerFolderRootPath
+					);
+				});
+
+				const picturesToUpload = await Promise.all(picturesFolderPromises);
+				newOffer.product_pictures = picturesToUpload;
+			}
+
+			// console.log("Etape 5 : ", filMoveToFolder);
 
 			await newOffer.save();
 
@@ -332,7 +351,7 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 			}
 			if (req.files) {
 				const newFile = await cloudinaryFunc.deleteCreateFiles(
-					req.files.picture,
+					req.files.image,
 					offerToModify.product_image.public_id
 				);
 
