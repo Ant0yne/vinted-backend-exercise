@@ -1,20 +1,19 @@
 const express = require("express");
 const fileUpload = require("express-fileupload");
+const mongoose = require("mongoose");
 const User = require("../models/User");
 const Offer = require("../models/Offer");
-// return the uploaded file with the middleware in req.fileUploaded
-// const uploadAutoCloudinary = require("../middlewares/uploadAutoCloudinary");
 // return the document (from MDB) of the user in req.user
 const isAuthenticated = require("../middlewares/isAuthenticated");
 const cloudinaryFunc = require("../functions/cloudinaryFunc");
 const isObjectPopulate = require("../functions/isObjectPopulate");
-const { default: mongoose } = require("mongoose");
 
 const router = express.Router();
 
 const maxPriceOfferGlobal = 100000;
 const titleMaxStrLength = 50;
 const descrMaxStrLength = 500;
+const offerFolderRootPath = "vinted/offers";
 
 /**
  * Create an offer
@@ -79,7 +78,8 @@ router.post(
 			];
 
 			const fileUploaded = await cloudinaryFunc.deleteCreateFiles(
-				req.files.picture
+				req.files.picture,
+				null
 			);
 
 			// console.log("Etape 3 : ", fileUploaded);
@@ -96,7 +96,8 @@ router.post(
 
 			const filMoveToFolder = await cloudinaryFunc.createFolder(
 				newOffer._id,
-				newOffer.product_image.public_id
+				newOffer.product_image.public_id,
+				offerFolderRootPath
 			);
 
 			// console.log("Etape 5 : ", filMoveToFolder);
@@ -146,6 +147,17 @@ router.get("/offers", async (req, res) => {
 			sortFinalValue = sort.replace("price-", "");
 		}
 
+		if (
+			(title && typeof title !== "string") ||
+			(description && typeof description !== "string") ||
+			isNaN(priceMin) ||
+			isNaN(priceMax) ||
+			isNaN(page)
+		) {
+			return res.status(400).json({
+				message: "Please use the right type of query.",
+			});
+		}
 		const offerList = await Offer.find({
 			product_name: new RegExp(title, "i"),
 			product_description: new RegExp(description, "i"),
@@ -157,10 +169,15 @@ router.get("/offers", async (req, res) => {
 			.limit(limitPerPage);
 		// .select("product_name product_description product_price owner -_id");
 
-		const returnOfferList = { count: offerList.length, offers: offerList };
-
-		console.log(`Le find renvoie ${offerList.length} offres`);
-		return res.status(200).json(returnOfferList);
+		if (offerList.length <= 0) {
+			return res
+				.status(400)
+				.json({ message: "No offer can be found with those parameters." });
+		} else {
+			const returnOfferList = { count: offerList.length, offers: offerList };
+			// console.log(`Le find renvoie ${offerList.length} offres`);
+			return res.status(200).json(returnOfferList);
+		}
 	} catch (error) {
 		return res.status(500).json({ message: error.message });
 	}
@@ -321,7 +338,8 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 
 				const fileModification = await cloudinaryFunc.createFolder(
 					offerToModify._id,
-					newFile.public_id
+					newFile.public_id,
+					offerFolderRootPath
 				);
 
 				offerToModify.product_image = fileModification;

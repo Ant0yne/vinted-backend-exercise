@@ -50,20 +50,20 @@ const middlewareFileCheck = async (req, res, next) => {
 	}
 };
 
-const createFolder = async (offerID, filePublicId) => {
+const createFolder = async (Id, filePublicId, folderRootPath) => {
 	try {
-		const folderList = await cloudinary.api.sub_folders("vinted/offers");
-		const newFilePublicId = `vinted/offers/${offerID}/${filePublicId}`;
+		const folderList = await cloudinary.api.sub_folders(folderRootPath);
+		const newFilePublicId = `${folderRootPath}/${Id}/${filePublicId}`;
 		let folderExist = false;
 
 		for (const folder of folderList.folders) {
-			if (folder.name === offerID) {
+			if (folder.name === Id) {
 				folderExist = true;
 			}
 		}
 
 		if (!folderExist) {
-			await cloudinary.api.create_folder("vinted/offers/" + offerID);
+			await cloudinary.api.create_folder(`${folderRootPath}/${Id}`);
 		}
 
 		const result = await cloudinary.uploader.rename(

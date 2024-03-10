@@ -1,13 +1,17 @@
 const express = require("express");
+const fileUpload = require("express-fileupload");
 const SHA256 = require("crypto-js/sha256");
 const encBase64 = require("crypto-js/enc-base64");
 const uid2 = require("uid2");
 const User = require("../models/User");
 const Offer = require("../models/Offer");
+const cloudinaryFunc = require("../functions/cloudinaryFunc");
 
 const router = express.Router();
 
-router.post("/user/signup", async (req, res) => {
+const avatarFolderRootPath = "vinted/avatar";
+
+router.post("/user/signup", fileUpload(), async (req, res) => {
 	try {
 		const usernameBody = req.body.username;
 		const emailBody = req.body.email;
@@ -51,6 +55,19 @@ router.post("/user/signup", async (req, res) => {
 			hash: hashGenerate,
 			token: tokenGenerate,
 		});
+
+		if (req.files) {
+			const avatarCreated = await cloudinaryFunc.deleteCreateFiles(
+				req.files.avatar,
+				null
+			);
+			const avatarFiled = await cloudinaryFunc.createFolder(
+				newUser._id,
+				avatarCreated.public_id,
+				avatarFolderRootPath
+			);
+			newUser.account.avatar = avatarFiled;
+		}
 
 		await newUser.save();
 
