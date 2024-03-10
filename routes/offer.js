@@ -14,6 +14,7 @@ const maxPriceOfferGlobal = 100000;
 const titleMaxStrLength = 50;
 const descrMaxStrLength = 500;
 const offerFolderRootPath = "vinted/offers";
+const maxPageNumber = 1000;
 
 /**
  * Create an offer
@@ -159,7 +160,7 @@ router.get("/offers", async (req, res) => {
 			// console.log("priceMin : ", priceMin);
 			// console.log("priceMax : ", priceMax);
 		}
-		if (!page) {
+		if (!page || page > maxPageNumber) {
 			page = 1;
 		}
 		if (sort && (sort === "price-desc" || sort === "price-asc")) {
