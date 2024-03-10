@@ -124,16 +124,25 @@ router.get("/offers", async (req, res) => {
 		let sortFinalValue = "desc";
 		const skipFinalValue = (page - 1) * limitPerPage;
 
-		if (!priceMin) {
+		if (!priceMin || priceMin < 0 || priceMin > maxPriceOfferGlobal) {
 			priceMin = 0;
 		}
-		if (!priceMax) {
+		if (!priceMax || priceMax > maxPriceOfferGlobal || priceMax < 0) {
 			priceMax = maxPriceOfferGlobal;
+		}
+
+		// console.log(priceMin, priceMax);
+		if (priceMin > priceMax) {
+			let temp = priceMin;
+			priceMin = priceMax;
+			priceMax = temp;
+			// console.log("priceMin : ", priceMin);
+			// console.log("priceMax : ", priceMax);
 		}
 		if (!page) {
 			page = 1;
 		}
-		if (sort) {
+		if (sort && (sort === "price-desc" || sort === "price-asc")) {
 			sortFinalValue = sort.replace("price-", "");
 		}
 
