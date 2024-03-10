@@ -13,6 +13,8 @@ const { default: mongoose } = require("mongoose");
 const router = express.Router();
 
 const maxPriceOfferGlobal = 100000;
+const titleMaxStrLength = 50;
+const descrMaxStrLength = 500;
 
 /**
  * Create an offer
@@ -38,11 +40,20 @@ router.post(
 				typeof city !== "string" ||
 				typeof brand !== "string" ||
 				typeof color !== "string" ||
-				(typeof size !== "string" && isNaN(size))
+				(typeof size !== "string" && isNaN(size)) ||
+				title.length > titleMaxStrLength ||
+				description.length > descrMaxStrLength ||
+				price > maxPriceOfferGlobal ||
+				condition.length > titleMaxStrLength ||
+				city.length > titleMaxStrLength ||
+				brand.length > titleMaxStrLength ||
+				color.length > titleMaxStrLength ||
+				(typeof size === "string" && size.length > titleMaxStrLength) ||
+				(typeof size === "number" && size > maxPriceOfferGlobal)
 			) {
 				return res.status(400).json({
 					message:
-						"Please fill all the mandatory fields with the right type of parameters.",
+						"Please fill all the mandatory fields with the right type of parameters and respecting the text limitation.",
 				});
 			}
 
@@ -205,74 +216,91 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 			return res.status(401).json({ error: "Unauthorized to do this action." });
 		} else {
 			if (title) {
-				if (typeof title === "string") {
+				if (typeof title === "string" && title.length <= titleMaxStrLength) {
 					offerToModify.product_name = title;
 				} else {
 					return res.status(400).json({
-						message: "Please fill fields with the right type of parameters.",
+						message:
+							"Please fill all the mandatory fields with the right type of parameters and respecting the text limitation.",
 					});
 				}
 			}
 			if (description) {
-				if (typeof description === "string") {
+				if (
+					typeof description === "string" &&
+					description.length <= descrMaxStrLength
+				) {
 					offerToModify.product_description = description;
 				} else {
 					return res.status(400).json({
-						message: "Please fill fields with the right type of parameters.",
+						message:
+							"Please fill all the mandatory fields with the right type of parameters and respecting the text limitation.",
 					});
 				}
 			}
 			if (price) {
-				if (!isNaN(price)) {
+				if (!isNaN(price) && price <= maxPriceOfferGlobal) {
 					offerToModify.product_price = price;
 				} else {
 					return res.status(400).json({
-						message: "Please fill fields with the right type of parameters.",
+						message:
+							"Please fill all the mandatory fields with the right type of parameters and respecting the text limitation.",
 					});
 				}
 			}
 			if (brand) {
-				if (typeof brand === "string") {
+				if (typeof brand === "string" && brand.length <= titleMaxStrLength) {
 					offerToModify.product_details[0] = { MARQUE: brand };
 				} else {
 					return res.status(400).json({
-						message: "Please fill fields with the right type of parameters.",
+						message:
+							"Please fill all the mandatory fields with the right type of parameters and respecting the text limitation.",
 					});
 				}
 			}
 			if (size) {
-				if (typeof size === "string" || typeof size === "number") {
+				if (
+					(typeof size === "string" && size.length <= titleMaxStrLength) ||
+					(typeof size === "number" && size <= maxPriceOfferGlobal)
+				) {
 					offerToModify.product_details[1] = { TAILLE: size };
 				} else {
 					return res.status(400).json({
-						message: "Please fill fields with the right type of parameters.",
+						message:
+							"Please fill fields with the right type of parameters and respecting the text limitation.",
 					});
 				}
 			}
 			if (condition) {
-				if (typeof condition === "string") {
+				if (
+					typeof condition === "string" &&
+					condition.length <= titleMaxStrLength
+				) {
 					offerToModify.product_details[2] = { ÉTAT: condition };
 				} else {
 					return res.status(400).json({
-						message: "Please fill fields with the right type of parameters.",
+						message:
+							"Please fill fields with the right type of parameters and respecting the text limitation.",
 					});
 				}
 			}
 			if (color) {
-				if (typeof color === "string") {
+				if (typeof color === "string" && color.length <= titleMaxStrLength) {
 					offerToModify.product_details[3] = { COULEUR: color };
 				} else {
 					return res.status(400).json({
-						message: "Please fill fields with the right type of parameters.",
+						message:
+							"Please fill fields with the right type of parameters and respecting the text limitation.",
 					});
 				}
 			}
 			if (city) {
-				if (typeof city === "string") {
+				if (typeof city === "string" && city.length > titleMaxStrLength) {
 					offerToModify.product_details[4] = { EMPLACEMENT: city };
 				} else {
 					return res.status(400).json({
-						message: "Please fill fields with the right type of parameters.",
+						message:
+							"Please fill fields with the right type of parameters and respecting the text limitation.",
 					});
 				}
 			}
