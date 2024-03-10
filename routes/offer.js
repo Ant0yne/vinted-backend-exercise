@@ -43,7 +43,7 @@ router.post(
 
 			// console.log("Etape 4 : ", newOffer.product_image.public_id);
 
-			const filMoveToFolder = await cloudinaryFunc.folder(
+			const filMoveToFolder = await cloudinaryFunc.createFolder(
 				newOffer._id,
 				newOffer.product_image.public_id
 			);
@@ -173,12 +173,12 @@ router.put("/offer/:id", isAuthenticated, fileUpload(), async (req, res) => {
 				offerToModify.product_details[4] = { EMPLACEMENT: req.body.city };
 			}
 			if (req.files) {
-				const newFile = await cloudinaryFunc.deleteCreate(
+				const newFile = await cloudinaryFunc.deleteCreateFiles(
 					req.files.picture,
 					offerToModify.product_image.public_id
 				);
 
-				const fileModification = await cloudinaryFunc.folder(
+				const fileModification = await cloudinaryFunc.createFolder(
 					offerToModify._id,
 					newFile.public_id
 				);
@@ -210,6 +210,11 @@ router.delete("/offer/:id", isAuthenticated, async (req, res) => {
 		} else if (offerToDelete.owner.token !== req.user.token) {
 			return res.status(401).json({ error: "Unauthorized to do this action." });
 		} else {
+			await cloudinaryFunc.deleteCreateFiles(
+				null,
+				offerToDelete.product_image.public_id
+			);
+			await cloudinaryFunc.deleteFolder(offerToDelete.product_image.folder);
 			await offerToDelete.deleteOne();
 
 			return res.status(200).json({

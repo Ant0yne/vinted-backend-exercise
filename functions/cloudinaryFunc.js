@@ -13,20 +13,22 @@ const convertToBase64 = (file) => {
 /**
  *
  * @param {object} fileToUpload
- * @param {string} fileToDelete
+ * @param {string} fileToDeleteID
  * @returns object with the data from Cloudinary regarding the file
  */
-const deleteCreate = async (fileToUpload, fileToDelete) => {
+const deleteCreateFiles = async (fileToUpload, fileToDeleteID) => {
 	try {
-		if (fileToDelete) {
-			await cloudinary.uploader.destroy(fileToDelete);
+		if (fileToDeleteID) {
+			await cloudinary.uploader.destroy(fileToDeleteID);
 		}
-		const result = await cloudinary.uploader.upload(
-			convertToBase64(fileToUpload)
-		);
 
-		// console.log("Etape 2 : ", result);
-		return result;
+		if (fileToUpload) {
+			const result = await cloudinary.uploader.upload(
+				convertToBase64(fileToUpload)
+			);
+			// console.log("Etape 2 : ", result);
+			return result;
+		}
 	} catch (error) {
 		return res.status(500).json({ message: "Error during the file upload." });
 	}
@@ -36,7 +38,7 @@ const middlewareCreate = async (req, res, next) => {
 	try {
 		if (req.files) {
 			// console.log("Etape 1 : ", req.files.picture);
-			req.fileUploaded = await deleteCreate(req.files.picture, null);
+			req.fileUploaded = await deleteCreateFiles(req.files.picture, null);
 			return next();
 		} else {
 			return res
@@ -48,7 +50,7 @@ const middlewareCreate = async (req, res, next) => {
 	}
 };
 
-const folder = async (offerID, filePublicId) => {
+const createFolder = async (offerID, filePublicId) => {
 	try {
 		const folderList = await cloudinary.api.sub_folders("vinted/offers");
 		const newFilePublicId = `vinted/offers/${offerID}/${filePublicId}`;
@@ -75,4 +77,13 @@ const folder = async (offerID, filePublicId) => {
 	}
 };
 
-module.exports = { deleteCreate, middlewareCreate, folder };
+const deleteFolder = async (folderPath) => {
+	await cloudinary.api.delete_folder(folderPath);
+};
+
+module.exports = {
+	deleteCreateFiles,
+	middlewareCreate,
+	createFolder,
+	deleteFolder,
+};
